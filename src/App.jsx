@@ -1,353 +1,419 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase, isSupabaseConfigured } from './supabase';
-import { Gift, LockKeyhole, LogOut, Plus, X, ExternalLink, Check, Pencil, Trash2 } from 'lucide-react';
+import { Gift, LockKeyhole, LogOut, X, ExternalLink, Check, Pencil, Trash2 } from 'lucide-react';
 
 const emptyForm = {
-  name: '', brand: '', store: '', price: '', size: '', color: '',
-  description: '', purchase_url: '', image_url: '', category: ''
+    name: '', brand: '', store: '', price: '', size: '', color: '',
+    description: '', purchase_url: '', image_url: '', category: ''
 };
 
 function Snowfall() {
-  useEffect(() => {
-    const canvas = document.querySelector('.snowfall-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduced) return;
-    let width = 0, height = 0, frame = 0, flakes = [];
-    const resize = () => {
-      const ratio = Math.min(window.devicePixelRatio || 1, 1.5);
-      width = window.innerWidth; height = window.innerHeight;
-      canvas.width = Math.floor(width * ratio);
-      canvas.height = Math.floor(height * ratio);
-      canvas.style.width = width + 'px'; canvas.style.height = height + 'px';
-      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-      const count = Math.min(width < 700 ? 22 : 52, Math.max(12, Math.round(width / 25)));
-      flakes = Array.from({ length: count }, () => ({
-        x: Math.random() * width, y: Math.random() * height,
-        r: .7 + Math.random() * 1.8, speed: .25 + Math.random() * .65,
-        drift: .15 + Math.random() * .35, phase: Math.random() * Math.PI * 2,
-        alpha: .22 + Math.random() * .35
-      }));
-    };
-    const draw = () => {
-      ctx.clearRect(0, 0, width, height);
-      flakes.forEach(f => {
-        f.phase += .008;
-        f.y += f.speed;
-        f.x += Math.sin(f.phase) * f.drift;
-        if (f.y > height + 5) { f.y = -5; f.x = Math.random() * width; }
-        if (f.x < -5) f.x = width + 5;
-        if (f.x > width + 5) f.x = -5;
-        ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,255,255,${f.alpha})`; ctx.fill();
-      });
-      frame = requestAnimationFrame(draw);
-    };
-    resize(); draw();
-    window.addEventListener('resize', resize);
-    return () => { cancelAnimationFrame(frame); window.removeEventListener('resize', resize); };
-  }, []);
-  return <canvas className="snowfall-canvas" aria-hidden="true" />;
+    useEffect(() => {
+        const canvas = document.querySelector('.snowfall-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduced) return;
+        let width = 0, height = 0, frame = 0, flakes = [];
+        const resize = () => {
+            const ratio = Math.min(window.devicePixelRatio || 1, 1.5);
+            width = window.innerWidth; height = window.innerHeight;
+            canvas.width = Math.floor(width * ratio);
+            canvas.height = Math.floor(height * ratio);
+            canvas.style.width = width + 'px'; canvas.style.height = height + 'px';
+            ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+            const count = Math.min(width < 700 ? 45 : 110, Math.max(24, Math.round(width / 12)));
+            flakes = Array.from({ length: count }, () => ({
+                x: Math.random() * width, y: Math.random() * height,
+                r: 1.5 + Math.random() * 2.6, speed: .25 + Math.random() * .65,
+                drift: .15 + Math.random() * .35, phase: Math.random() * Math.PI * 2,
+                alpha: .7 + Math.random() * .3
+            }));
+        };
+        const draw = () => {
+            ctx.clearRect(0, 0, width, height);
+            // white flakes vanish on the cream page without a cool halo
+            ctx.shadowColor = 'rgba(70, 95, 130, .55)'; ctx.shadowBlur = 5;
+            flakes.forEach(f => {
+                f.phase += .008;
+                f.y += f.speed;
+                f.x += Math.sin(f.phase) * f.drift;
+                if (f.y > height + 5) { f.y = -5; f.x = Math.random() * width; }
+                if (f.x < -5) f.x = width + 5;
+                if (f.x > width + 5) f.x = -5;
+                ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255,255,255,${f.alpha})`; ctx.fill();
+            });
+            frame = requestAnimationFrame(draw);
+        };
+        resize(); draw();
+        window.addEventListener('resize', resize);
+        return () => { cancelAnimationFrame(frame); window.removeEventListener('resize', resize); };
+    }, []);
+    return <canvas className="snowfall-canvas" aria-hidden="true" />;
 }
 
-const SNOW_BITS = [[-26,-18],[-18,-30],[-8,-34],[6,-32],[18,-28],[28,-16],[-30,-4],[30,-2],[-22,8],[24,10],[-12,-24],[12,-22]];
-
+// looping clips of the two dogs; a still poster for people who ask for less motion
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 function ChristmasDog({ kind }) {
-  const pug = kind === 'pug';
-  const id = pug ? 'pug' : 'yorkie';
-  // hat + snow sit on top of each photo's head, so positions differ per dog
-  const hat = pug ? 'translate(8 4) rotate(-14 40 20)' : 'translate(22 2) rotate(12 40 20)';
-  const head = pug ? { x: 44, y: 20 } : { x: 54, y: 22 };
-  return (
-    <svg className={`christmas-dog christmas-dog-${id}`} viewBox="0 0 100 100" aria-hidden="true">
-      <defs>
-        <linearGradient id={`${id}-snow`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#ffffff"/>
-          <stop offset="1" stopColor="#d6e3e8"/>
-        </linearGradient>
-        <linearGradient id={`${id}-hat`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#d23a43"/>
-          <stop offset="1" stopColor="#8e1b25"/>
-        </linearGradient>
-        <radialGradient id={`${id}-hole`}>
-          <stop offset="0" stopColor="#7d929c"/>
-          <stop offset="1" stopColor="#c3d3d9"/>
-        </radialGradient>
-        <clipPath id={`${id}-clip`}><rect x="-20" y="-40" width="140" height="124"/></clipPath>
-      </defs>
-      <ellipse cx="50" cy="83" rx="36" ry="7" fill={`url(#${id}-hole)`}/>
-      <g clipPath={`url(#${id}-clip)`}>
-        <g className="dog-emerge">
-          <g className="dog-shake"><g transform="translate(0 -7)">
-            <image href={`${import.meta.env.BASE_URL}dog-${id}.webp`} x="8" y="8" width="84" height="84"/>
-            <g transform={hat}>
-              <path d="M18 26 Q30 2 54 6 Q66 9 70 22 Q50 16 22 30Z" fill={`url(#${id}-hat)`}/>
-              <path d="M54 6 Q68 4 74 16" fill="none" stroke="#8e1b25" strokeWidth="5" strokeLinecap="round"/>
-              <circle cx="75" cy="18" r="5.5" fill="#fbf7f0"/>
-              <path d="M15 30 Q42 15 72 23 Q74 28 71 31 Q43 23 18 37 Q13 35 15 30Z" fill="#fbf7f0"/>
-            </g>
-            <g className="dog-snow-cap" fill={`url(#${id}-snow)`}>
-              <path d={`M${head.x - 24} ${head.y + 6} q4 -12 14 -10 q6 -9 16 -4 q10 -3 14 8 q6 2 4 8 q-24 -6 -48 -2Z`}/>
-              <circle cx={head.x - 14} cy={head.y + 26} r="4.5"/><circle cx={head.x + 16} cy={head.y + 22} r="3.8"/>
-              <circle cx={head.x + 2} cy={head.y + 34} r="2.6"/><circle cx={head.x - 22} cy={head.y + 14} r="3"/>
-            </g>
-          </g></g>
-        </g>
-      </g>
-      <g className="dog-burst" transform={`translate(${head.x} ${head.y + 5})`} fill="#fff">
-        {SNOW_BITS.map(([dx, dy], i) => (
-          <circle key={i} r={1 + (i % 3) * 0.6} style={{ '--dx': `${dx}px`, '--dy': `${dy}px` }}/>
-        ))}
-      </g>
-      <path className="dog-snowbank" d="M2 86 C9 80 14 78 22 81 C29 74 40 77 46 82 C55 75 66 77 72 82 C81 78 91 80 98 87 L98 100 L2 100Z" fill={`url(#${id}-snow)`}/>
-      <path d="M7 89 C17 83 23 84 31 87 M43 86 C52 81 61 83 67 87 M76 87 C83 83 89 85 94 89" fill="none" stroke="#c8d9df" strokeWidth="1.3" opacity=".72"/>
-      <g fill="#fff" opacity=".9"><circle cx="18" cy="82" r="2.2"/><circle cx="42" cy="80" r="1.6"/><circle cx="80" cy="82" r="2"/></g>
-    </svg>
-  );
+    return (
+        <span className={`christmas-dog christmas-dog-${kind}`} aria-hidden="true">
+            <video src={`${BASE}dog-${kind}.mp4`} poster={`${BASE}dog-${kind}-poster.webp`}
+                width="360" height="360" autoPlay={!reducedMotion} loop muted playsInline disablePictureInPicture />
+        </span>
+    );
 }
-function ChristmasDogs() {
-  return (
-    <div className="christmas-dogs" aria-hidden="true">
-      <ChristmasDog kind="pug" />
-      <ChristmasDog kind="yorkie" />
-    </div>
-  );
-}
+
+const formatPrice = price => Number(price).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' });
+const BASE = import.meta.env.BASE_URL;
+
+// reservation tokens live in this browser only: they prove "I reserved this" without any login
+const CLAIMS_KEY = 'wishlist-claims';
+const readClaims = () => { try { return JSON.parse(localStorage.getItem(CLAIMS_KEY)) || {}; } catch { return {}; } };
+// invite code arrives once in the link (#convite-<code>) and stays in this browser; without it the list shows no states
+const INVITE_KEY = 'wishlist-invite';
+const INVITE = (() => {
+    const fromLink = location.hash.match(/^#convite-(\w+)/)?.[1];
+    try {
+        if (fromLink) localStorage.setItem(INVITE_KEY, fromLink);
+        return fromLink || localStorage.getItem(INVITE_KEY);
+    } catch { return fromLink || null; }
+})();
+// explicit list: the state columns are not readable from the table, only through gift_states
+const COLUMNS = 'id,name,image_url,brand,store,price,size,color,description,purchase_url,category,created_at';
+const stateOf = p => p.purchased_at ? 'purchased' : p.claimed_at ? 'reserved' : 'available';
+const STATE_LABEL = { available: 'Disponível', reserved: 'Reservado', purchased: 'Comprado' };
+const STATE_ORDER = { available: 0, reserved: 1, purchased: 2 };
 
 export default function App() {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
-  const [adminOpen, setAdminOpen] = useState(false);
-  const [session, setSession] = useState(null);
-  const [admin, setAdmin] = useState(false);
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [form, setForm] = useState(emptyForm);
-  const [editingId, setEditingId] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [reservingId, setReservingId] = useState(null);
-  const [category, setCategory] = useState('Todos');
+    const [products, setProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [notice, setNotice] = useState(null); // { text }
+    const [adminOpen, setAdminOpen] = useState(false);
+    const [session, setSession] = useState(null);
+    const [admin, setAdmin] = useState(false);
+    const [loginEmail, setLoginEmail] = useState('');
+    const [loginPassword, setLoginPassword] = useState('');
+    const [form, setForm] = useState(emptyForm);
+    const [editingId, setEditingId] = useState(null);
+    const [saving, setSaving] = useState(false);
+    const [reservingId, setReservingId] = useState(null);
+    const [claims, setClaims] = useState(readClaims);
+    const [confirmingId, setConfirmingId] = useState(null);
+    const [category, setCategory] = useState('Todos');
+    const [guest, setGuest] = useState(false); // invite code accepted by the server
+    const adminRef = useRef(null);
+    // the list owner never sees states, even on a device that has the invite
+    const showStates = guest && !admin;
 
-  const categories = useMemo(
-    () => ['Todos', ...new Set(products.map(p => p.category).filter(Boolean))],
-    [products]
-  );
-  const visibleProducts = useMemo(
-    () => category === 'Todos' ? products : products.filter(p => p.category === category),
-    [products, category]
-  );
+    const categories = useMemo(() => {
+        const counts = new Map([['Todos', products.length]]);
+        products.forEach(p => p.category && counts.set(p.category, (counts.get(p.category) || 0) + 1));
+        return [...counts];
+    }, [products]);
+    // available gifts first, then reserved, purchased last
+    const visibleProducts = useMemo(
+        () => (category === 'Todos' ? products : products.filter(p => p.category === category))
+            .slice().sort((a, b) => showStates ? STATE_ORDER[stateOf(a)] - STATE_ORDER[stateOf(b)] : 0),
+        [products, category, showStates]
+    );
 
-  async function loadProducts() {
-    if (!supabase) { setLoading(false); return; }
-    setLoading(true);
-    const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
-    if (error) setError(error.message);
-    else setProducts(data || []);
-    setLoading(false);
-  }
-
-  async function checkAdmin(currentSession) {
-    if (!currentSession || !supabase) { setAdmin(false); return; }
-    const { data, error } = await supabase.rpc('is_admin');
-    setAdmin(!error && data === true);
-  }
-
-  useEffect(() => {
-    if (!supabase) { setLoading(false); return; }
-    loadProducts();
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      checkAdmin(data.session);
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      checkAdmin(nextSession);
-    });
-    return () => listener.subscription.unsubscribe();
-  }, []);
-
-  async function reserve(product) {
-    if (!supabase || product.claimed_at) return;
-    setReservingId(product.id); setError(''); setNotice('');
-    // Reserva anónima: não enviamos nem pedimos o nome de quem reserva.
-    const { error } = await supabase.rpc('reserve_product', {
-      p_product_id: product.id,
-      p_guest_name: null
-    });
-    if (error) setError(error.message);
-    else {
-      setNotice('Reserva confirmada! Obrigada por ajudares a evitar presentes duplicados. ✨');
-      await loadProducts();
-    }
-    setReservingId(null);
-  }
-
-  async function login(e) {
-    e.preventDefault(); setError('');
-    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
-    if (error) setError(error.message);
-    else { setLoginPassword(''); setNotice('Sessão iniciada.'); }
-  }
-
-  async function logout() {
-    await supabase.auth.signOut();
-    setAdmin(false); setSession(null);
-  }
-
-  function startEdit(product) {
-    setEditingId(product.id);
-    setForm({
-      name: product.name || '', brand: product.brand || '', store: product.store || '',
-      price: product.price ?? '', size: product.size || '', color: product.color || '',
-      description: product.description || '', purchase_url: product.purchase_url || '',
-      image_url: product.image_url || '', category: product.category || ''
-    });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  async function saveProduct(e) {
-    e.preventDefault(); setSaving(true); setError(''); setNotice('');
-    const payload = {
-      ...form,
-      price: form.price === '' ? null : Number(form.price),
-      updated_at: new Date().toISOString()
-    };
-    const result = editingId
-      ? await supabase.from('products').update(payload).eq('id', editingId)
-      : await supabase.from('products').insert(payload);
-    if (result.error) setError(result.error.message);
-    else {
-      setNotice(editingId ? 'Presente atualizado.' : 'Presente adicionado.');
-      setForm(emptyForm); setEditingId(null); await loadProducts();
-    }
-    setSaving(false);
-  }
-
-  async function deleteProduct(product) {
-    if (!window.confirm(`Queres apagar "${product.name}"?`)) return;
-    const { error } = await supabase.from('products').delete().eq('id', product.id);
-    if (error) setError(error.message);
-    else { setNotice('Presente apagado.'); await loadProducts(); }
-  }
-
-  if (!isSupabaseConfigured) {
-    return <main className="setup"><div className="setup-card"><span className="eyebrow">UM NATAL ESPECIAL</span><h1>Wishlist</h1><p>Falta configurar as credenciais do Supabase no ficheiro <code>.env</code>.</p></div></main>;
-  }
-
-  return (
-    <div className="app-shell">
-      <Snowfall />
-      <header className="topbar">
-        <img className="holly holly-left" src={`${import.meta.env.BASE_URL}holly-sprig.png`} alt="" aria-hidden="true" />
-        <div className="brand-group">
-          <ChristmasDog kind="pug" />
-          <a className="brandmark" href="#inicio">Wishlist</a>
-          <ChristmasDog kind="yorkie" />
-        </div>
-        <img className="holly holly-right" src={`${import.meta.env.BASE_URL}holly-sprig.png`} alt="" aria-hidden="true" />
-      </header>
-
-      <section className="hero" id="inicio">
-        <div className="hero-photo" />
-        <div className="hero-copy">
-          <span className="eyebrow">UM PEQUENO GUIA</span>
-          <h1>Como funciona?</h1>
-          <p className="hero-lead">Um presente de cada vez, sem surpresas repetidas.</p>
-          <div className="howto">
-            <div><b>01</b><p><strong>Escolhe</strong><br/>Explora a lista e carrega na fotografia para abrir a página do produto.</p></div>
-            <div><b>02</b><p><strong>Reserva antes de comprar</strong><br/>Carrega em «Eu quero comprar isto» primeiro. Assim evitamos presentes duplicados.</p></div>
-            <div><b>03</b><p><strong>A surpresa fica guardada</strong><br/>O presente passa a aparecer como reservado. Não consigo ver quem reservou o quê.</p></div>
-          </div>
-        </div>
-      </section>
-
-      <main id="wishlist" className="wishlist-section">
-        <div className="section-heading">
-          <h2>Wishlist</h2>
-          <p>Lembra-te: reserva sempre antes de fazeres a compra e ao carregares na imagem do produto podes comprar diretamente no site</p>
-        </div>
-
-        <div className="category-row" id="categorias">
-          <span className="ornament">✦</span>
-          {categories.map(c => <button key={c} className={category === c ? 'category active' : 'category'} onClick={() => setCategory(c)}>{c}</button>)}
-          <span className="ornament">✦</span>
-        </div>
-
-        {error && <div className="message error">{error}</div>}
-        {notice && <div className="message success">{notice}</div>}
-        {loading ? <p className="empty-state">A preparar a lista...</p> :
-          visibleProducts.length === 0 ? <p className="empty-state">Ainda não há presentes nesta categoria.</p> :
-          <div className="gift-grid">
-            {visibleProducts.map(p => (
-              <article className={`gift-card ${p.claimed_at ? 'is-claimed' : ''}`} key={p.id}>
-                <a className="gift-image" href={p.purchase_url || undefined}
-                   target={p.purchase_url ? '_blank' : undefined}
-                   rel={p.purchase_url ? 'noreferrer' : undefined}
-                   aria-label={p.purchase_url ? `Ver ${p.name} na loja` : p.name}
-                   onClick={e => { if (!p.purchase_url) e.preventDefault(); }}>
-                  {p.image_url ? <img src={p.image_url} alt={p.name}/> : <div className="image-placeholder"><Gift size={38}/><span>UM PRESENTE ESPECIAL</span></div>}
-                  <span className={`status ${p.claimed_at ? 'claimed' : 'available'}`}>
-                    <i />{p.claimed_at ? 'Reservado' : 'Disponível'}
-                  </span>
-                  {p.purchase_url && <span className="image-link"><ExternalLink size={14}/> Ver produto</span>}
-                </a>
-                <div className="gift-info">
-                  <h3>{p.name}</h3>
-                  {(p.brand || p.store) && <p className="gift-subtitle">{[p.brand, p.store].filter(Boolean).join(' · ')}</p>}
-                  <div className="product-details">
-                    {p.size && <span>Tamanho: {p.size}</span>}
-                    {p.color && <span>Cor: {p.color}</span>}
-                  </div>
-                  {p.price != null && <p className="price">{Number(p.price).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })}</p>}
-                  {p.description && <p className="gift-description">{p.description}</p>}
-                  {p.claimed_at
-                    ? <button className="reserve-button reserved" disabled><Check size={17}/> Presente reservado</button>
-                    : <button className="reserve-button" onClick={() => reserve(p)} disabled={reservingId === p.id}>
-                        <Gift size={17}/> {reservingId === p.id ? 'A reservar...' : 'Eu quero comprar isto'}
-                      </button>}
-                </div>
-              </article>
-            ))}
-          </div>
+    async function loadProducts() {
+        if (!supabase) { setLoading(false); return; }
+        setLoading(true);
+        const [list, states] = await Promise.all([
+            supabase.from('products').select(COLUMNS).order('created_at', { ascending: false }),
+            INVITE ? supabase.rpc('gift_states', { p_code: INVITE }) : { data: null }
+        ]);
+        if (list.error) setError(`Não foi possível carregar a lista. Recarrega a página. (${list.error.message})`);
+        else {
+            const byId = new Map((states.data || []).map(s => [s.id, s]));
+            setProducts(list.data.map(p => ({ ...p, ...byId.get(p.id) })));
+            setGuest(Boolean(states.data));
         }
-      </main>
+        setLoading(false);
+    }
 
-      <footer className="footer"><span>FEITO COM ♡ E ESPÍRITO DE NATAL</span><button className="admin-link" onClick={() => setAdminOpen(v => !v)}><LockKeyhole size={14}/> Área privada</button></footer>
+    async function checkAdmin(currentSession) {
+        if (!currentSession || !supabase) { setAdmin(false); return; }
+        const { data, error } = await supabase.rpc('is_admin');
+        setAdmin(!error && data === true);
+    }
 
-      {adminOpen && <section className="admin-panel">
-        <div className="admin-heading"><div><span className="eyebrow">GESTÃO</span><h2>Área de administração</h2></div><button className="icon-button" onClick={() => setAdminOpen(false)} aria-label="Fechar"><X/></button></div>
-        {!admin ? <form className="login-form" onSubmit={login}>
-          <p>Entra com a conta de administrador criada no Supabase.</p>
-          <label>Email<input type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} required /></label>
-          <label>Palavra-passe<input type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} required /></label>
-          <button className="primary-button" type="submit">Entrar</button>
-          {session && <p className="muted">A conta está autenticada, mas não tem permissões de administração.</p>}
-        </form> : <div className="admin-tools">
-          <div className="admin-heading"><p className="success-text">Sessão de administrador ativa</p><button className="text-button" onClick={logout}><LogOut size={15}/> Terminar sessão</button></div>
-          <p className="privacy-note">As reservas são anónimas: esta área mostra apenas se um presente está reservado, nunca quem o reservou.</p>
-          <form className="product-form" onSubmit={saveProduct}>
-            <h3>{editingId ? 'Editar presente' : 'Adicionar presente'}</h3>
-            <div className="form-grid">
-              <label>Nome do presente *<input value={form.name} onChange={e => setForm({...form, name:e.target.value})} required /></label>
-              <label>Categoria<input value={form.category} onChange={e => setForm({...form, category:e.target.value})} placeholder="Ex.: Moda, Casa..." /></label>
-              <label>Marca<input value={form.brand} onChange={e => setForm({...form, brand:e.target.value})} /></label>
-              <label>Loja<input value={form.store} onChange={e => setForm({...form, store:e.target.value})} /></label>
-              <label>Preço<input type="number" min="0" step="0.01" value={form.price} onChange={e => setForm({...form, price:e.target.value})} /></label>
-              <label>Tamanho<input value={form.size} onChange={e => setForm({...form, size:e.target.value})} /></label>
-              <label>Cor<input value={form.color} onChange={e => setForm({...form, color:e.target.value})} /></label>
-              <label>URL da imagem<input type="url" value={form.image_url} onChange={e => setForm({...form, image_url:e.target.value})} placeholder="https://..." /></label>
-              <label className="wide">Link de compra<input type="url" value={form.purchase_url} onChange={e => setForm({...form, purchase_url:e.target.value})} placeholder="https://..." /></label>
-              <label className="wide">Descrição<textarea rows="3" value={form.description} onChange={e => setForm({...form, description:e.target.value})}/></label>
-            </div>
-            <div className="form-actions"><button className="primary-button" disabled={saving}>{saving ? 'A guardar...' : editingId ? 'Guardar alterações' : 'Adicionar presente'}</button>{editingId && <button type="button" className="text-button" onClick={() => {setEditingId(null);setForm(emptyForm)}}>Cancelar edição</button>}</div>
-          </form>
-          <h3 className="manage-title">Os teus presentes ({products.length})</h3>
-          <div className="manage-list">{products.map(p => <div className="manage-row" key={p.id}><span>{p.name} {p.claimed_at && <small>· Reservado</small>}</span><div><button className="icon-button" onClick={() => startEdit(p)} aria-label="Editar"><Pencil size={16}/></button><button className="icon-button danger" onClick={() => deleteProduct(p)} aria-label="Apagar"><Trash2 size={16}/></button></div></div>)}</div>
-        </div>}
-      </section>}
-    </div>
-  );
+    useEffect(() => {
+        if (!supabase) { setLoading(false); return; }
+        loadProducts();
+        supabase.auth.getSession().then(({ data }) => {
+            setSession(data.session);
+            checkAdmin(data.session);
+        });
+        const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+            setSession(nextSession);
+            checkAdmin(nextSession);
+        });
+        return () => listener.subscription.unsubscribe();
+    }, []);
+
+    useEffect(() => {
+        if (!notice) return;
+        const t = setTimeout(() => setNotice(null), 7000);
+        return () => clearTimeout(t);
+    }, [notice]);
+
+    useEffect(() => {
+        if (adminOpen) adminRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, [adminOpen]);
+
+    // reveal-once entrances; content stays visible without JS (hidden state only under html.js)
+    useEffect(() => {
+        const io = new IntersectionObserver(entries => {
+            for (const e of entries) if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
+        }, { threshold: 0.05 });
+        document.querySelectorAll('[data-reveal]:not(.is-in)').forEach(el => io.observe(el));
+        return () => io.disconnect();
+    }, [visibleProducts, loading, adminOpen]);
+
+    function saveClaims(next) {
+        setClaims(next);
+        try { localStorage.setItem(CLAIMS_KEY, JSON.stringify(next)); } catch { /* private mode: token lasts this visit only */ }
+    }
+
+    async function reserve(product) {
+        if (!supabase || product.claimed_at) return;
+        setReservingId(product.id); setError(''); setNotice(null);
+        const token = crypto.randomUUID();
+        const { error } = await supabase.rpc('claim_product', { p_product_id: product.id, p_token: token, p_code: INVITE });
+        if (error) setError(`Não foi possível reservar «${product.name}». Pode já ter sido reservado por outra pessoa. Recarrega a página e tenta de novo.`);
+        else {
+            saveClaims({ ...claims, [product.id]: token });
+            setNotice({ text: `«${product.name}» está reservado para ti. Quando o comprares, marca-o como comprado.` });
+            await loadProducts();
+        }
+        setReservingId(null); setConfirmingId(null);
+    }
+
+    // release = undo the reservation, purchase = final state; both need this browser's token
+    async function changeClaim(product, action) {
+        const release = action === 'release';
+        if (release && !window.confirm(`Cancelar a reserva de «${product.name}»? Volta a ficar disponível para outra pessoa.`)) return;
+        setReservingId(product.id); setError(''); setNotice(null);
+        const { error } = await supabase.rpc(release ? 'release_product' : 'mark_purchased',
+            { p_product_id: product.id, p_token: claims[product.id] });
+        if (error) setError(`Não foi possível atualizar «${product.name}». Recarrega a página e tenta de novo.`);
+        else {
+            if (release) { const { [product.id]: _, ...rest } = claims; saveClaims(rest); }
+            setNotice({ text: release ? `Reserva de «${product.name}» cancelada.` : `«${product.name}» marcado como comprado. Obrigada!` });
+            await loadProducts();
+        }
+        setReservingId(null);
+    }
+
+    async function login(e) {
+        e.preventDefault(); setError('');
+        const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
+        if (error) setError('Email ou palavra-passe incorretos.');
+        else { setLoginPassword(''); setNotice({ text: 'Sessão iniciada.' }); }
+    }
+
+    async function logout() {
+        await supabase.auth.signOut();
+        setAdmin(false); setSession(null);
+    }
+
+    async function copyInvite() {
+        const { data } = await supabase.rpc('guest_code');
+        if (!data) { setError('Não foi possível obter o link de convite.'); return; }
+        await navigator.clipboard.writeText(`${location.origin}${BASE}#convite-${data}`);
+        setNotice({ text: 'Link de convite copiado. Partilha-o com a família e não o abras tu.' });
+    }
+
+    function startEdit(product) {
+        setEditingId(product.id);
+        setForm({
+            name: product.name || '', brand: product.brand || '', store: product.store || '',
+            price: product.price ?? '', size: product.size || '', color: product.color || '',
+            description: product.description || '', purchase_url: product.purchase_url || '',
+            image_url: product.image_url || '', category: product.category || ''
+        });
+        adminRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    async function saveProduct(e) {
+        e.preventDefault(); setSaving(true); setError(''); setNotice(null);
+        const payload = {
+            ...form,
+            price: form.price === '' ? null : Number(form.price),
+            updated_at: new Date().toISOString()
+        };
+        const result = editingId
+            ? await supabase.from('products').update(payload).eq('id', editingId)
+            : await supabase.from('products').insert(payload);
+        if (result.error) setError(`Não foi possível guardar. (${result.error.message})`);
+        else {
+            setNotice({ text: editingId ? 'Alterações guardadas.' : 'Presente adicionado à lista.' });
+            setForm(emptyForm); setEditingId(null); await loadProducts();
+        }
+        setSaving(false);
+    }
+
+    async function deleteProduct(product) {
+        if (!window.confirm(`Apagar «${product.name}» da lista? Não dá para desfazer.`)) return;
+        const { error } = await supabase.from('products').delete().eq('id', product.id);
+        if (error) setError(`Não foi possível apagar. (${error.message})`);
+        else { setNotice({ text: 'Presente apagado.' }); await loadProducts(); }
+    }
+
+    const field = key => ({ value: form[key], onChange: e => setForm({ ...form, [key]: e.target.value }) });
+
+    if (!isSupabaseConfigured) {
+        return <main className="setup"><div className="setup-card"><h1>Wishlist</h1><p>Faltam as credenciais do Supabase no ficheiro <code>.env</code>. Copia <code>.env.example</code> e preenche os valores.</p></div></main>;
+    }
+
+    return (
+        <div className="app-shell">
+            <Snowfall />
+            <header className="topbar">
+                <img className="holly holly-left" src={`${BASE}holly-sprig.png`} alt="" aria-hidden="true" />
+                <div className="brand-group">
+                    <ChristmasDog kind="pug" />
+                    <a className="brandmark" href="#inicio">Wishlist</a>
+                    <ChristmasDog kind="yorkie" />
+                </div>
+                <img className="holly holly-right" src={`${BASE}holly-sprig.png`} alt="" aria-hidden="true" />
+            </header>
+
+            <section className="hero" id="inicio">
+                <div className="hero-photo" role="img" aria-label="Sala decorada para o Natal, com árvore e lareira acesa" />
+                <div className="hero-copy">
+                    <span className="eyebrow">UM PEQUENO GUIA</span>
+                    <h1>Como funciona?</h1>
+                    <p className="hero-lead">Um presente de cada vez, sem surpresas repetidas.</p>
+                    <div className="howto">
+                        <div><b>01</b><p><strong>Escolhe</strong><br />Explora a lista e carrega na fotografia para abrir a página do produto na loja.</p></div>
+                        <div><b>02</b><p><strong>Reserva antes de comprar</strong><br />Carrega em «Eu quero comprar isto». O presente fica guardado para ti e mais ninguém o pode escolher.</p></div>
+                        <div><b>03</b><p><strong>Compra e avisa</strong><br />Depois de o comprares, volta aqui e carrega em «Já comprei».</p></div>
+                        <div><b>04</b><p><strong>Mudaste de ideias?</strong><br />Carrega em «Cancelar reserva» no mesmo telemóvel ou computador, e o presente volta a ficar disponível.</p></div>
+                    </div>
+                </div>
+            </section>
+
+            <main id="wishlist" className="wishlist-section">
+                <div className="section-heading" data-reveal>
+                    <h2>Wishlist</h2>
+                </div>
+
+                {categories.length > 2 && <div className="category-row" data-reveal role="group" aria-label="Filtrar por categoria">
+                    <span className="ornament">✦</span>
+                    {categories.map(([c, n]) => (
+                        <button key={c} className="category" aria-pressed={category === c} onClick={() => setCategory(c)}>
+                            {c}
+                        </button>
+                    ))}
+                    <span className="ornament">✦</span>
+                </div>}
+
+                {error && <div className="message error" role="alert">{error}<button className="icon-button" onClick={() => setError('')} aria-label="Fechar aviso"><X size={16} /></button></div>}
+                {!loading && !showStates && !admin && <p className="message invite-hint">Para veres o que ainda está disponível e reservares um presente, abre o link de convite que recebeste.</p>}
+                {loading ? <p className="empty-state">A carregar presentes...</p> :
+                    visibleProducts.length === 0 ? <div className="empty-state">
+                        <p>{products.length === 0 ? 'A lista ainda está vazia. Volta daqui a uns dias.' : 'Não há presentes nesta categoria.'}</p>
+                        {category !== 'Todos' && <button className="secondary-button" onClick={() => setCategory('Todos')}>Ver todos os presentes</button>}
+                    </div> :
+                        <div className="gift-grid">
+                            {visibleProducts.map(p => {
+                                const state = showStates ? stateOf(p) : 'available';
+                                const mine = Boolean(claims[p.id]);
+                                const busy = reservingId === p.id;
+                                return (
+                                    <article className={`gift-card is-${state}`} key={p.id} data-reveal>
+                                        <a className="gift-image" href={p.purchase_url || undefined}
+                                            target={p.purchase_url ? '_blank' : undefined}
+                                            rel={p.purchase_url ? 'noreferrer' : undefined}
+                                            aria-label={p.purchase_url ? `Ver ${p.name} na loja (abre noutro separador)` : p.name}>
+                                            {p.image_url ? <img src={p.image_url} alt="" loading="lazy" /> : <div className="image-placeholder"><Gift size={38} /><span>UM PRESENTE ESPECIAL</span></div>}
+                                            {showStates && <span className={`status status-${state}`}><i />{STATE_LABEL[state]}</span>}
+                                            {p.purchase_url && <span className="image-link"><ExternalLink size={14} /> Ver produto</span>}
+                                        </a>
+                                        <div className="gift-info">
+                                            <h3>{p.name}</h3>
+                                            {(p.brand || p.store) && <p className="gift-subtitle">{[p.brand, p.store].filter(Boolean).join(' · ')}</p>}
+                                            <div className="product-details">
+                                                {p.size && <span>Tamanho: {p.size}</span>}
+                                                {p.color && <span>Cor: {p.color}</span>}
+                                            </div>
+                                            {p.price != null && <p className="price">{formatPrice(p.price)}</p>}
+                                            {p.description && p.description.trim() !== '-' && <p className="gift-description">{p.description}</p>}
+                                            {showStates && <div className="gift-actions">
+                                                {state === 'purchased'
+                                                    ? <button className="reserve-button reserved" disabled><Check size={17} /> {mine ? 'Compraste este presente' : 'Presente comprado'}</button>
+                                                    : state === 'reserved'
+                                                        ? mine
+                                                            ? <>
+                                                                <button className="reserve-button" onClick={() => changeClaim(p, 'purchase')} disabled={busy}><Check size={17} /> Já comprei</button>
+                                                                <button className="text-button" onClick={() => changeClaim(p, 'release')} disabled={busy}>Cancelar reserva</button>
+                                                            </>
+                                                            : <button className="reserve-button reserved" disabled><Check size={17} /> Presente reservado</button>
+                                                        : confirmingId === p.id
+                                                            ? <>
+                                                                <button className="reserve-button" onClick={() => reserve(p)} disabled={busy} autoFocus><Check size={17} /> {busy ? 'A reservar...' : 'Confirmar reserva'}</button>
+                                                                <button className="text-button" onClick={() => setConfirmingId(null)} disabled={busy}>Cancelar</button>
+                                                            </>
+                                                            : <button className="reserve-button" onClick={() => setConfirmingId(p.id)}><Gift size={17} /> Eu quero comprar isto</button>}
+                                            </div>}
+                                        </div>
+                                    </article>
+                                );
+                            })}
+                        </div>
+                }
+            </main>
+
+            {adminOpen && <section className="admin-panel" ref={adminRef} aria-labelledby="admin-title">
+                <div className="admin-heading"><h2 id="admin-title">Gerir a lista</h2><button className="icon-button" onClick={() => setAdminOpen(false)} aria-label="Fechar área privada"><X /></button></div>
+                {!admin ? <form className="login-form" onSubmit={login}>
+                    <p>Só para quem gere a lista. Entra com a tua conta de administração.</p>
+                    <label>Email<input type="email" autoComplete="username" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} required /></label>
+                    <label>Palavra-passe<input type="password" autoComplete="current-password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} required /></label>
+                    <button className="primary-button" type="submit">Entrar</button>
+                    {session && <p className="muted">Tens sessão iniciada, mas esta conta não tem permissão para gerir a lista.</p>}
+                </form> : <div className="admin-tools">
+                    <div className="admin-heading"><p className="success-text">Sessão de administração iniciada</p><button className="text-button" onClick={logout}><LogOut size={15} /> Terminar sessão</button></div>
+                    <p className="privacy-note">Com a tua sessão iniciada não vês reservas nem compras. Os estados só aparecem a quem abre o link de convite. <button className="text-button" onClick={copyInvite}>Copiar link de convite</button></p>
+                    <form className="product-form" onSubmit={saveProduct}>
+                        <h3>{editingId ? 'Editar presente' : 'Adicionar presente'}</h3>
+                        <div className="form-grid">
+                            <label>Nome *<input {...field('name')} required /></label>
+                            <label>Categoria<input {...field('category')} placeholder="Ex.: Moda, Casa" list="category-options" /></label>
+                            <label>Marca<input {...field('brand')} /></label>
+                            <label>Loja<input {...field('store')} /></label>
+                            <label>Preço (€)<input type="number" inputMode="decimal" min="0" step="0.01" {...field('price')} /></label>
+                            <label>Tamanho<input {...field('size')} /></label>
+                            <label>Cor<input {...field('color')} /></label>
+                            <label>Link da imagem<input type="url" {...field('image_url')} placeholder="https://" /></label>
+                            <label className="wide">Link da loja<input type="url" {...field('purchase_url')} placeholder="https://" /></label>
+                            <label className="wide">Descrição<textarea rows="3" {...field('description')} /></label>
+                        </div>
+                        <datalist id="category-options">{categories.slice(1).map(([c]) => <option key={c} value={c} />)}</datalist>
+                        <div className="form-actions"><button className="primary-button" disabled={saving}>{saving ? 'A guardar...' : editingId ? 'Guardar alterações' : 'Adicionar presente'}</button>{editingId && <button type="button" className="text-button" onClick={() => { setEditingId(null); setForm(emptyForm) }}>Cancelar edição</button>}</div>
+                    </form>
+                    <h3 className="manage-title">Na lista ({products.length})</h3>
+                    <ul className="manage-list">{products.map(p => <li className="manage-row" key={p.id}><span>{p.name}</span><div><button className="icon-button" onClick={() => startEdit(p)} aria-label={`Editar ${p.name}`}><Pencil size={16} /></button><button className="icon-button danger" onClick={() => deleteProduct(p)} aria-label={`Apagar ${p.name}`}><Trash2 size={16} /></button></div></li>)}</ul>
+                </div>}
+            </section>}
+
+            <footer className="footer" data-reveal>
+                <p>Boas festas e obrigada por fazeres parte delas.</p>
+                <button className="admin-link" onClick={() => setAdminOpen(v => !v)} aria-expanded={adminOpen}>
+                    <LockKeyhole size={14} /> Área privada
+                </button>
+            </footer>
+
+            {notice && <div className="toast" role="status">
+                <Check size={18} aria-hidden="true" />
+                <span>{notice.text}</span>
+                <button className="icon-button" onClick={() => setNotice(null)} aria-label="Fechar"><X size={16} /></button>
+            </div>}
+        </div>
+    );
 }
