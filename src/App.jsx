@@ -51,76 +51,61 @@ function Snowfall() {
   return <canvas className="snowfall-canvas" aria-hidden="true" />;
 }
 
+const SNOW_BITS = [[-26,-18],[-18,-30],[-8,-34],[6,-32],[18,-28],[28,-16],[-30,-4],[30,-2],[-22,8],[24,10],[-12,-24],[12,-22]];
+
 function ChristmasDog({ kind }) {
   const pug = kind === 'pug';
-  const fur = pug ? '#c99b70' : '#c5cbd1';
-  const shadow = pug ? '#9b7658' : '#929da7';
-  const ear = pug ? '#55545a' : '#89939c';
-  const muzzle = pug ? '#55545a' : '#d8dde1';
   const id = pug ? 'pug' : 'yorkie';
+  // hat + snow sit on top of each photo's head, so positions differ per dog
+  const hat = pug ? 'translate(8 4) rotate(-14 40 20)' : 'translate(22 2) rotate(12 40 20)';
+  const head = pug ? { x: 44, y: 20 } : { x: 54, y: 22 };
   return (
     <svg className={`christmas-dog christmas-dog-${id}`} viewBox="0 0 100 100" aria-hidden="true">
       <defs>
-        <linearGradient id={`${id}-fur`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor={pug ? '#e0bd96' : '#e2e6e9'}/>
-          <stop offset="1" stopColor={shadow}/>
-        </linearGradient>
         <linearGradient id={`${id}-snow`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#fffefa"/>
-          <stop offset="1" stopColor="#dce7eb"/>
+          <stop offset="0" stopColor="#ffffff"/>
+          <stop offset="1" stopColor="#d6e3e8"/>
         </linearGradient>
+        <linearGradient id={`${id}-hat`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#d23a43"/>
+          <stop offset="1" stopColor="#8e1b25"/>
+        </linearGradient>
+        <radialGradient id={`${id}-hole`}>
+          <stop offset="0" stopColor="#7d929c"/>
+          <stop offset="1" stopColor="#c3d3d9"/>
+        </radialGradient>
+        <clipPath id={`${id}-clip`}><rect x="-20" y="-40" width="140" height="124"/></clipPath>
       </defs>
-      <g className="dog-emerge">
-        {pug ? (
-          <>
-            <path d="M22 48 Q8 16 21 15 Q38 20 39 47Z" fill={ear}/>
-            <path d="M62 47 Q73 16 84 19 Q91 33 73 54Z" fill={ear}/>
-          </>
-        ) : (
-          <>
-            <path d="M22 48 Q11 10 28 13 Q43 20 40 49Z" fill={ear}/>
-            <path d="M62 48 Q72 10 85 15 Q90 35 72 53Z" fill={ear}/>
-          </>
-        )}
-        <ellipse cx="50" cy="52" rx={pug ? 34 : 34} ry={pug ? 34 : 35} fill={`url(#${id}-fur)`}/>
-        {pug ? (
-          <>
-            <path d="M22 52 Q30 39 49 43 Q69 38 79 54 Q74 76 51 78 Q27 75 22 52Z" fill={muzzle}/>
-            <ellipse cx="50" cy="61" rx="12" ry="9" fill="#343238"/>
-            <path d="M46 70 Q50 74 55 70" fill="none" stroke="#29282b" strokeWidth="1.8" strokeLinecap="round"/>
-            <path d="M34 48 Q39 45 43 49 M57 49 Q62 45 67 48" fill="none" stroke="#51443a" strokeWidth="2" strokeLinecap="round"/>
-          </>
-        ) : (
-          <>
-            <path d="M30 57 Q38 47 50 49 Q64 46 71 58 Q68 73 51 76 Q34 74 30 57Z" fill={muzzle}/>
-            <ellipse cx="50" cy="63" rx="6" ry="4.8" fill="#3c4147"/>
-            <path d="M45 72 Q50 76 55 72" fill="none" stroke="#555c63" strokeWidth="1.7" strokeLinecap="round"/>
-            <path d="M34 49 Q39 46 43 50 M57 50 Q62 46 66 49" fill="none" stroke="#626b73" strokeWidth="1.7" strokeLinecap="round"/>
-          </>
-        )}
-        <circle cx="39" cy="50" r="3" fill="#29282b"/>
-        <circle cx="62" cy="50" r="3" fill="#29282b"/>
-        {!pug && <g fill="#d9dfe3" opacity=".95"><path d="M27 34 Q25 22 37 23 Q40 13 49 20 Q56 11 63 22 Q76 20 76 34 Q63 29 51 33 Q38 29 27 34Z"/><path d="M31 42 Q25 35 34 31 Q41 35 42 42Z"/></g>}
-        <path d="M26 30 Q43 9 68 22 L73 34 Q51 27 29 40Z" fill="#a52a35"/>
-        <path d="M27 36 Q49 27 73 36 L71 44 Q49 36 29 46Z" fill="#fffaf2"/>
-        <circle cx="69" cy="22" r="7" fill="#fffaf2"/>
-        <path d="M31 25 Q39 20 45 19 M62 24 L66 25" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity=".85"/>
-        <g className="dog-snow-specks" fill="#fff">
-          <circle cx="28" cy="42" r="2.5"/><circle cx="72" cy="43" r="2"/><circle cx="47" cy="17" r="2.2"/>
+      <ellipse cx="50" cy="83" rx="36" ry="7" fill={`url(#${id}-hole)`}/>
+      <g clipPath={`url(#${id}-clip)`}>
+        <g className="dog-emerge">
+          <g className="dog-shake"><g transform="translate(0 -7)">
+            <image href={`${import.meta.env.BASE_URL}dog-${id}.webp`} x="8" y="8" width="84" height="84"/>
+            <g transform={hat}>
+              <path d="M18 26 Q30 2 54 6 Q66 9 70 22 Q50 16 22 30Z" fill={`url(#${id}-hat)`}/>
+              <path d="M54 6 Q68 4 74 16" fill="none" stroke="#8e1b25" strokeWidth="5" strokeLinecap="round"/>
+              <circle cx="75" cy="18" r="5.5" fill="#fbf7f0"/>
+              <path d="M15 30 Q42 15 72 23 Q74 28 71 31 Q43 23 18 37 Q13 35 15 30Z" fill="#fbf7f0"/>
+            </g>
+            <g className="dog-snow-cap" fill={`url(#${id}-snow)`}>
+              <path d={`M${head.x - 24} ${head.y + 6} q4 -12 14 -10 q6 -9 16 -4 q10 -3 14 8 q6 2 4 8 q-24 -6 -48 -2Z`}/>
+              <circle cx={head.x - 14} cy={head.y + 26} r="4.5"/><circle cx={head.x + 16} cy={head.y + 22} r="3.8"/>
+              <circle cx={head.x + 2} cy={head.y + 34} r="2.6"/><circle cx={head.x - 22} cy={head.y + 14} r="3"/>
+            </g>
+          </g></g>
         </g>
       </g>
-      <path className="dog-snowbank" d="M2 85 C9 79 14 76 22 79 C29 70 40 73 46 79 C55 71 66 73 72 80 C81 75 91 78 98 86 L98 100 L2 100Z" fill={`url(#${id}-snow)`}/>
-      <path d="M7 87 C17 81 23 82 31 85 M43 84 C52 79 61 81 67 85 M76 85 C83 81 89 83 94 87" fill="none" stroke="#c8d9df" strokeWidth="1.3" opacity=".72"/>
-      <g fill="#fff" opacity=".9"><circle cx="18" cy="80" r="2.2"/><circle cx="42" cy="78" r="1.6"/><circle cx="80" cy="80" r="2"/></g>
-      <ellipse cx="39" cy="84" rx="5" ry="2.6" fill={fur}/>
-      <ellipse cx="60" cy="84" rx="5" ry="2.6" fill={fur}/>
-      <g className="dog-shake-snow" fill="#fff">
-        <circle cx="18" cy="48" r="2"/><circle cx="82" cy="55" r="1.7"/><circle cx="13" cy="63" r="1.3"/>
+      <g className="dog-burst" transform={`translate(${head.x} ${head.y + 5})`} fill="#fff">
+        {SNOW_BITS.map(([dx, dy], i) => (
+          <circle key={i} r={1 + (i % 3) * 0.6} style={{ '--dx': `${dx}px`, '--dy': `${dy}px` }}/>
+        ))}
       </g>
+      <path className="dog-snowbank" d="M2 86 C9 80 14 78 22 81 C29 74 40 77 46 82 C55 75 66 77 72 82 C81 78 91 80 98 87 L98 100 L2 100Z" fill={`url(#${id}-snow)`}/>
+      <path d="M7 89 C17 83 23 84 31 87 M43 86 C52 81 61 83 67 87 M76 87 C83 83 89 85 94 89" fill="none" stroke="#c8d9df" strokeWidth="1.3" opacity=".72"/>
+      <g fill="#fff" opacity=".9"><circle cx="18" cy="82" r="2.2"/><circle cx="42" cy="80" r="1.6"/><circle cx="80" cy="82" r="2"/></g>
     </svg>
   );
 }
-
 function ChristmasDogs() {
   return (
     <div className="christmas-dogs" aria-hidden="true">
@@ -256,17 +241,13 @@ export default function App() {
     <div className="app-shell">
       <Snowfall />
       <header className="topbar">
-        <img className="holly holly-left" src="/holly-sprig.png" alt="" aria-hidden="true" />\n        <nav className="main-nav">
-          <a href="#inicio">Início</a>
-          <a href="#wishlist">Wishlist</a>
-          <a href="#categorias">Categorias</a>
-        </nav>
+        <img className="holly holly-left" src={`${import.meta.env.BASE_URL}holly-sprig.png`} alt="" aria-hidden="true" />
         <div className="brand-group">
           <ChristmasDog kind="pug" />
           <a className="brandmark" href="#inicio">Wishlist</a>
           <ChristmasDog kind="yorkie" />
         </div>
-        <img className="holly holly-right" src="/holly-sprig.png" alt="" aria-hidden="true" />
+        <img className="holly holly-right" src={`${import.meta.env.BASE_URL}holly-sprig.png`} alt="" aria-hidden="true" />
       </header>
 
       <section className="hero" id="inicio">
