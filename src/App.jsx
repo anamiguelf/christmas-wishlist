@@ -224,7 +224,7 @@ export default function App() {
     async function copyInvite() {
         const { data } = await supabase.rpc('guest_code');
         if (!data) { setError('Não foi possível obter o link de convite.'); return; }
-        await navigator.clipboard.writeText(`${location.origin}${BASE}#convite-${data}`);
+        await navigator.clipboard.writeText(`${location.origin}${location.pathname}#convite-${data}`);
         setNotice({ text: 'Link de convite copiado. Partilha-o com a família e não o abras tu.' });
     }
 
@@ -403,7 +403,6 @@ export default function App() {
             </section>}
 
             <footer className="footer" data-reveal>
-                <p>Boas festas e obrigada por fazeres parte delas.</p>
                 <button className="admin-link" onClick={() => setAdminOpen(v => !v)} aria-expanded={adminOpen}>
                     <LockKeyhole size={14} /> Área privada
                 </button>
