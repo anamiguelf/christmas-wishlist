@@ -274,13 +274,11 @@ export default function App() {
         <div className="app-shell">
             <Snowfall />
             <header className="topbar">
-                <img className="holly holly-left" src={`${BASE}holly-sprig.png`} alt="" aria-hidden="true" />
                 <div className="brand-group">
                     <ChristmasDog kind="pug" />
                     <a className="brandmark" href="#inicio">Wishlist</a>
                     <ChristmasDog kind="yorkie" />
                 </div>
-                <img className="holly holly-right" src={`${BASE}holly-sprig.png`} alt="" aria-hidden="true" />
             </header>
 
             <section className="hero" id="inicio">

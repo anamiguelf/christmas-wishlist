@@ -6,7 +6,6 @@
   --berry: #842b31;
   --berry-dark: #682027;
   --gold: #f4e2cf;
-  --green: #1f4b3b;
   --ink: #4b2b21;
   --muted: #765b49;
   --line: #e6cdb5;
@@ -823,29 +822,11 @@ textarea:focus {
   }
 }
 
-/* Header: holly, dog medallions either side of the wordmark */
+/* Header: just the wordmark between the two dogs, centred on the page background */
 .topbar {
-  background: var(--green);
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
+  place-items: center;
   padding: 26px var(--margin) 18px;
-}
-
-.holly {
-  width: clamp(44px, 6vw, 80px);
-  height: auto;
-  pointer-events: none
-}
-
-.holly-left {
-  justify-self: start;
-  transform: rotate(-6deg)
-}
-
-.holly-right {
-  justify-self: end;
-  transform: scaleX(-1) rotate(-6deg)
 }
 
 .brand-group {
@@ -860,7 +841,7 @@ textarea:focus {
   font-size: clamp(32px, 4.2vw, 56px);
   line-height: 1;
   letter-spacing: -0.03em;
-  color: var(--paper);
+  color: var(--pine);
   text-decoration: none;
   white-space: nowrap;
 }
